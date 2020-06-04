@@ -1,0 +1,13 @@
+p {
+	font-size: 1em;
+}
+
+.box {
+	margin-bottom: 10px;
+}
+
+.responsive {
+  width: 100%;
+  border: "0";
+  alt: "Null";
+}

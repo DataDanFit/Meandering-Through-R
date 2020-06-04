@@ -1,0 +1,59 @@
+---
+title: "Communcating Data with R Markdown Example"
+author: "Daniel Fitton"
+date: "23/04/2020"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(dplyr)
+library(ggplot2)
+```
+
+## Edgar Anderson's Iris Data
+
+This famous (Fisher's or Anderson's) iris data set gives the measurements in centimeters of the variables sepal length and width and petal length and width, respectively, for 50 flowers from each of 3 species of iris. The species are Iris setosa, versicolor, and virginica.
+
+Here is a summary of the data:
+
+```{r iris}
+summary(iris)
+```
+
+### Table
+Here is an aggregated view of each species, calculated by taking the mean of each column. It also includes a new column which calculates the Total Length.
+```{r Table}
+knitr::kable(iris %>% 
+  mutate(Total.Length = Sepal.Length + Petal.Length) %>% 
+  group_by(Species) %>% 
+  summarise_all(mean) %>% 
+  arrange(desc(Total.Length))
+  )
+```
+
+### Pair Plot
+
+This visualisation shows how the distribution of data when comparing each variable in the dataset.There appears to be a positive correlation between the following:
+
+* Sepal Length and Petal Length
+* Sepal Length and Petal Width
+* Petal Length and Petal Width
+
+There appears to be clear groups, or clusters, in the dataset when comparing these variables as well.
+There doesn't, however, appear to be a clear correlation between Sepal Length and Sepal Width.
+
+```{r pair plot}
+plot(iris)
+```
+
+### Petal Length vs. Petal Width
+The clusters in the dataset appear to be caused by the type of iris species.
+
+``` {r Petal Length vs. Petal Width}
+iris %>% 
+  ggplot(mapping = aes(x = Petal.Width, y = Petal.Length)) +
+  geom_point(aes(color = Species))
+```

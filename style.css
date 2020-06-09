@@ -7,7 +7,19 @@ p {
 }
 
 .responsive {
-  width: 100%;
-  border: "0";
-  alt: "Null";
+	width: 100%;
+	border: "0";
+	alt: "Null";
+}
+
+.irs-bar,
+.irs-bar-edge,
+.irs-single,
+.irs-grid-pol {
+  background: #605ca8;
+  border-color: #605ca8;
+}
+
+.box-body {
+  padding: 1.25em;
 }

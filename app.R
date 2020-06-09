@@ -4,6 +4,8 @@ library(dplyr)
 library(DT)
 library(ggplot2)
 library(plotly)
+library(rpart)
+library(rpart.plot)
 
 # User Interface ----------------------------------------------------------
 
@@ -13,18 +15,36 @@ ui <- dashboardPage(
     dashboardHeader(title = "Iris Dashboard"),
     dashboardSidebar(
         sidebarMenu(
-            menuItem("Charts", tabName = "charts", icon = icon("stats", lib = "glyphicon")),
+            menuItem("Analytics", tabName = "analytics", icon = icon("stats", lib = "glyphicon")),
             menuItem("Information", tabName = "information", icon = icon("info"))
         )
     ),
     dashboardBody(
         tabItems(
-            tabItem(tabName = "charts",
+            tabItem(tabName = "analytics",
                 fluidRow(
                     column(width = 8, 
                            box(title = "Plot",
                                width = "100%",
-                               plotlyOutput("plot", height = 600)
+                               tags$div(style = "display:inline-block; margin-right:1em;width:25%;", 
+                                   selectInput("selected_x", "X-Axis:",
+                                            c("Sepal Length" = "Sepal.Length",
+                                              "Sepal Width" = "Sepal.Width",
+                                              "Petal Length" = "Petal.Length",
+                                              "Petal Width" = "Petal.Width"),
+                                            selected = c("Sepal.Length")
+                                   )
+                               ),
+                               tags$div(style = "display:inline-block;width:25%;", 
+                                selectInput("selected_y", "Y-Axis:",
+                                            c("Sepal Length" = "Sepal.Length",
+                                              "Sepal Width" = "Sepal.Width",
+                                              "Petal Length" = "Petal.Length",
+                                              "Petal Width" = "Petal.Width"),
+                                            selected = c("Sepal.Width")
+                                )
+                               ),
+                            plotlyOutput("plot", height = 600, width = "100%")
                            ),
                            box(title = "Averages",
                                width = "100%",
@@ -32,19 +52,21 @@ ui <- dashboardPage(
                            )
                     ),
                     column(width = 4,
-                           selectInput("selected_x", "X-Axis:", 
-                                       c("Sepal Length" = "Sepal.Length",
-                                         "Sepal Width" = "Sepal.Width",
-                                         "Petal Length" = "Petal.Length",
-                                         "Petal Width" = "Petal.Width"),
-                                       selected = c("Sepal.Length")
-                           ),
-                           selectInput("selected_y", "Y-Axis:", 
-                                       c("Sepal Length" = "Sepal.Length",
-                                         "Sepal Width" = "Sepal.Width",
-                                         "Petal Length" = "Petal.Length",
-                                         "Petal Width" = "Petal.Width"),
-                                       selected = c("Sepal.Width")
+                           box(title = "Predict Species",
+                               width = "100%",
+                               sliderInput("sepal_length", label = "Sepal Length", min = 0, max = 10, value = 5, step = 0.1, width = "75%"),
+                               sliderInput("sepal_width", label = "Sepal Width", min = 0, max = 5, value = 2.5, step = 0.1, width = "75%"),
+                               sliderInput("petal_length", label = "Petal Length", min = 0, max = 10, value = 5, step = 0.1, width = "75%"),
+                               sliderInput("petal_width", label = "Petal Width", min = 0, max = 5, value = 2.5, step = 0.1, width = "75%"),
+                               tabsetPanel(type = "tabs",
+                                           tabPanel("Result",
+                                                    tags$br(),
+                                                    tags$div(style = "font-size: 1.5em;", textOutput("predicted_species_text")),
+                                                    uiOutput("predicted_species_image")
+                                                    ),
+                                           tabPanel("Model", tags$br(), plotOutput("decision_tree"))
+                               )
+                               
                            )
                     )
                 )
@@ -138,6 +160,10 @@ server <- function(input, output) {
     output$plot <- renderPlotly({
         x_axis <- input$selected_x
         y_axis <- input$selected_y
+        firstup <- function(x) {
+            substr(x, 1, 1) <- toupper(substr(x, 1, 1))
+            x
+        }
         p <- ggplot(data = iris, aes(x = get(x_axis), y = get(y_axis),
             group = 1,
             text = paste(
@@ -179,6 +205,45 @@ server <- function(input, output) {
             style = "bootstrap4"
         )
     })
+    
+    
+    classifier = rpart(formula = Species ~ ., data = iris)
+    
+    
+    output$predicted_species_text <- renderText({
+        Sepal.Length <- input$sepal_length
+        Sepal.Width <- input$sepal_width
+        Petal.Length <- input$petal_length
+        Petal.Width <- input$petal_width
+        input_data <- data.frame(Sepal.Length, Sepal.Width, Petal.Length, Petal.Width)
+        y_pred = predict(classifier, newdata = input_data, type = 'class')
+        firstup <- function(x) {
+            substr(x, 1, 1) <- toupper(substr(x, 1, 1))
+            x
+        }
+        paste(firstup(as.character(y_pred)))
+    })
+    
+    output$predicted_species_image <- renderUI({
+        Sepal.Length <- input$sepal_length
+        Sepal.Width <- input$sepal_width
+        Petal.Length <- input$petal_length
+        Petal.Width <- input$petal_width
+        input_data <- data.frame(Sepal.Length, Sepal.Width, Petal.Length, Petal.Width)
+        y_pred = predict(classifier, newdata = input_data, type = 'class')
+        if (as.character(y_pred) == "setosa") {
+            tags$img(src = "IRIS_SETOSA.jpg", height = "481px")
+        } else if (as.character(y_pred) == "versicolor") {
+            img(src = "IRIS_VERSICOLOR.jpg",  height = "481px")
+        } else if (as.character(y_pred) == "virginica") {
+            img(src = "IRIS_VIRGINICA.jpg", height = "481px")
+        }
+    })
+    
+    output$decision_tree <- renderPlot({
+        rpart.plot(classifier, type = 5, fallen.leaves = FALSE, shadow = "grey")
+    })
+    
 }
 
 
